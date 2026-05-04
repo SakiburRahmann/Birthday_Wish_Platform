@@ -74,7 +74,9 @@ export function BirthdayPageClient({ initialEvent, slug }: { initialEvent: any, 
     if (!event || !event.birthday_date) return;
 
     const calculateTime = () => {
-      const target = new Date(`${event.birthday_date}T00:00:00`).getTime();
+      // Replace dashes with slashes for Safari compatibility
+      const dateStr = event.birthday_date.replace(/-/g, "/");
+      const target = new Date(`${dateStr}T00:00:00`).getTime();
       const now = new Date().getTime();
       const difference = target - now;
 
