@@ -1,17 +1,33 @@
-import { put } from '@vercel/blob';
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const { searchParams } = new URL(request.url);
-  const filename = searchParams.get('filename');
+  const body = (await request.json()) as HandleUploadBody;
 
-  if (!filename || !request.body) {
-    return NextResponse.json({ error: 'Filename and body required' }, { status: 400 });
+  try {
+    const jsonResponse = await handleUpload({
+      body,
+      request,
+      onBeforeGenerateToken: async (pathname) => {
+        // Authenticate the user here if needed
+        return {
+          allowedContentTypes: ['video/mp4', 'video/quicktime', 'video/webm'],
+          tokenPayload: JSON.stringify({
+            // optional: add some metadata to the token
+          }),
+        };
+      },
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        // This is called on the server after the upload is completed
+        console.log('blob upload completed', blob, tokenPayload);
+      },
+    });
+
+    return NextResponse.json(jsonResponse);
+  } catch (error) {
+    return NextResponse.json(
+      { error: (error as Error).message },
+      { status: 400 }
+    );
   }
-
-  const blob = await put(filename, request.body, {
-    access: 'public',
-  });
-
-  return NextResponse.json(blob);
 }

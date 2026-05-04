@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { upload } from "@vercel/blob/client";
 import { supabase } from "@/lib/supabase";
 import FestiveBackground from "@/components/FestiveBackground";
 import { 
@@ -88,16 +89,15 @@ export default function EditProfile() {
       
       try {
         if (type === 'video') {
-          // Use Vercel Blob for larger videos (250MB limit)
-          const response = await fetch(`/api/upload?filename=${fileName}`, {
-            method: 'POST',
-            body: file,
+          // Direct client-side upload to Vercel Blob (No size limit issues)
+          const blob = await upload(fileName, file, {
+            access: 'public',
+            handleUploadUrl: '/api/upload',
           });
-          const blob = await response.json();
           if (blob.url) {
             newUrls.push(blob.url);
           } else {
-            throw new Error(blob.error || 'Upload failed');
+            throw new Error('Upload failed');
           }
         } else {
           // Use Supabase for images
