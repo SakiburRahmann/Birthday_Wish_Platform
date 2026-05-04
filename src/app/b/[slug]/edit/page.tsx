@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { upload } from "@vercel/blob/client";
+import * as tus from 'tus-js-client';
 import { supabase } from "@/lib/supabase";
 import FestiveBackground from "@/components/FestiveBackground";
 import { 
@@ -23,6 +23,7 @@ export default function EditProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Form State
   const [name, setName] = useState("");
@@ -80,6 +81,7 @@ export default function EditProfile() {
 
     if (type === 'gallery') setIsUploadingGallery(true);
     else setIsUploadingVideo(true);
+    setUploadProgress(0);
 
     const newUrls = type === 'gallery' ? [...galleryUrls] : [...videoUrls];
 
@@ -89,16 +91,39 @@ export default function EditProfile() {
       
       try {
         if (type === 'video') {
-          // Direct client-side upload to Vercel Blob (No size limit issues)
-          const blob = await upload(fileName, file, {
-            access: 'public',
-            handleUploadUrl: '/api/upload',
+          // Direct chunked upload to Supabase using TUS protocol (bypasses 50MB payload limits)
+          await new Promise<void>((resolve, reject) => {
+            const upload = new tus.Upload(file, {
+              endpoint: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/upload/resumable`,
+              retryDelays: [0, 3000, 5000, 10000, 20000],
+              headers: {
+                authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+              },
+              uploadDataDuringCreation: true,
+              removeFingerprintOnSuccess: true,
+              metadata: {
+                bucketName: 'media',
+                objectName: `${type}/${fileName}`,
+                contentType: file.type || 'video/mp4',
+              },
+              chunkSize: 6 * 1024 * 1024, // 6MB chunks
+              onError: function (error) {
+                reject(error);
+              },
+              onProgress: function (bytesUploaded, bytesTotal) {
+                const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(0);
+                setUploadProgress(Number(percentage));
+              },
+              onSuccess: function () {
+                const { data: publicUrlData } = supabase.storage
+                  .from("media")
+                  .getPublicUrl(`${type}/${fileName}`);
+                newUrls.push(publicUrlData.publicUrl);
+                resolve();
+              }
+            });
+            upload.start();
           });
-          if (blob.url) {
-            newUrls.push(blob.url);
-          } else {
-            throw new Error('Upload failed');
-          }
         } else {
           // Use Supabase for images
           const { data, error } = await supabase.storage
@@ -419,15 +444,24 @@ export default function EditProfile() {
                       disabled={isUploadingVideo}
                       className="px-6 py-2.5 rounded-full bg-[#1d1d1f] text-white text-xs font-bold uppercase tracking-widest shadow-md hover:bg-black transition-all flex items-center gap-2"
                     >
-                      {isUploadingVideo ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                      Add Videos
+                      {isUploadingVideo ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          {uploadProgress > 0 ? `${uploadProgress}%` : 'Uploading...'}
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={14} /> Add Videos
+                        </>
+                      )}
                     </button>
                     <input 
                       type="file" 
                       multiple 
                       accept="video/*" 
                       onChange={(e) => handleFileUpload(e, 'video')}
-                      className="absolute inset-0 opacity-0 cursor-pointer" 
+                      className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed" 
+                      disabled={isUploadingVideo}
                     />
                   </div>
                 </div>
