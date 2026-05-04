@@ -70,10 +70,10 @@ export default function BirthdayPage() {
   }, [slug, event?.id]);
 
   useEffect(() => {
-    if (!event) return;
+    if (!event || !event.birthday_date) return;
 
-    const timer = setInterval(() => {
-      const target = new Date(event.birthday_date).getTime();
+    const calculateTime = () => {
+      const target = new Date(`${event.birthday_date}T00:00:00`).getTime();
       const now = new Date().getTime();
       const difference = target - now;
 
@@ -85,12 +85,22 @@ export default function BirthdayPage() {
           seconds: Math.floor((difference / 1000) % 60),
         });
       } else {
-        clearInterval(timer);
+        // If it's the birthday or past, check if it's the SAME DAY
+        const isSameDay = new Date().toISOString().split('T')[0] === event.birthday_date;
+        if (isSameDay) {
+          setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        } else {
+          // Could countdown to next year, but for now just stay at zero
+          setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        }
       }
-    }, 1000);
+    };
+
+    calculateTime();
+    const timer = setInterval(calculateTime, 1000);
 
     return () => clearInterval(timer);
-  }, [event]);
+  }, [event?.birthday_date]);
 
   const toggleMusic = () => {
     if (!audioRef.current) {
@@ -205,26 +215,39 @@ export default function BirthdayPage() {
             </p>
           </motion.div>
 
-          {/* Countdown Timer */}
+          {/* Countdown Timer or Celebration Message */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="mt-16 flex gap-4 md:gap-8"
+            className="mt-16"
           >
-            {[
-              { label: "Days", value: timeLeft.days },
-              { label: "Hours", value: timeLeft.hours },
-              { label: "Mins", value: timeLeft.minutes },
-              { label: "Secs", value: timeLeft.seconds }
-            ].map((unit, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl glass flex items-center justify-center text-2xl md:text-4xl font-serif text-[#1d1d1f] shadow-lg mb-2">
-                  {unit.value.toString().padStart(2, '0')}
-                </div>
-                <span className="text-[10px] md:text-xs uppercase tracking-widest text-[#c5a059] font-bold">{unit.label}</span>
+            {timeLeft.days === 0 && timeLeft.hours === 0 && timeLeft.minutes === 0 && timeLeft.seconds === 0 ? (
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="glass px-12 py-8 rounded-[40px] shadow-2xl border-white/50"
+              >
+                <h2 className="text-4xl md:text-6xl font-serif text-gradient">It's Celebration Time! 🎂</h2>
+                <p className="text-[#6e6e73] mt-4 font-medium tracking-widest uppercase text-xs">Today is the big day</p>
+              </motion.div>
+            ) : (
+              <div className="flex gap-4 md:gap-8 justify-center">
+                {[
+                  { label: "Days", value: timeLeft.days },
+                  { label: "Hours", value: timeLeft.hours },
+                  { label: "Mins", value: timeLeft.minutes },
+                  { label: "Secs", value: timeLeft.seconds }
+                ].map((unit, i) => (
+                  <div key={i} className="flex flex-col items-center">
+                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl glass flex items-center justify-center text-2xl md:text-4xl font-serif text-[#1d1d1f] shadow-lg mb-2">
+                      {unit.value.toString().padStart(2, '0')}
+                    </div>
+                    <span className="text-[10px] md:text-xs uppercase tracking-widest text-[#c5a059] font-bold">{unit.label}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </motion.div>
         </div>
 
