@@ -19,6 +19,9 @@ export default {
           text: "#1d1d1f",
         },
       },
+      boxShadow: {
+        luxe: "0 20px 50px rgba(0, 0, 0, 0.12)",
+      },
     },
   },
   plugins: [],

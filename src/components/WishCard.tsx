@@ -22,7 +22,7 @@ export default function WishCard({ sender, message, index }: WishCardProps) {
         ease: [0.16, 1, 0.3, 1]
       }}
       whileHover={{ y: -8, rotate: 0, transition: { duration: 0.3 } }}
-      className="p-8 rounded-[32px] bg-white/80 backdrop-blur-xl border border-black/5 shadow-luxe flex flex-col justify-between min-h-[280px] relative overflow-hidden group"
+      className="p-8 rounded-[32px] bg-white/95 backdrop-blur-xl border border-black/10 shadow-luxe flex flex-col justify-between min-h-[280px] relative overflow-hidden group"
     >
       {/* Texture overlay */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]" />
