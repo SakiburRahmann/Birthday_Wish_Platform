@@ -294,22 +294,32 @@ export function BirthdayPageClient({ initialEvent, slug }: { initialEvent: any, 
               <p className="text-[#6e6e73] font-light italic">Heartfelt messages and special clips saved forever.</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
               {event.videos.map((url: string, i: number) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  className="rounded-[40px] overflow-hidden glass p-4 shadow-2xl relative group"
+                  className="group relative"
                 >
-                  <div className="rounded-[28px] overflow-hidden aspect-video bg-black/5">
-                    <video 
-                      src={url} 
-                      controls 
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="rounded-[48px] overflow-hidden glass p-4 shadow-luxe transition-all duration-700 group-hover:shadow-2xl group-hover:-translate-y-2">
+                    <div className="rounded-[32px] overflow-hidden aspect-video bg-black relative">
+                      <video 
+                        src={url} 
+                        controls 
+                        onPlay={() => {
+                          if (isMusicPlaying) {
+                            audioRef.current?.pause();
+                            setIsMusicPlaying(false);
+                          }
+                        }}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                   </div>
+                  {/* Decorative element */}
+                  <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-[#c5a05910] rounded-full blur-3xl -z-10 group-hover:bg-[#c5a05920] transition-all" />
                 </motion.div>
               ))}
             </div>

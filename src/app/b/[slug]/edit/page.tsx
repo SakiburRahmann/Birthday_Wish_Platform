@@ -394,23 +394,50 @@ export default function EditProfile() {
                   <h2 className="text-2xl font-serif text-[#1d1d1f] flex items-center gap-3">
                     <Video size={24} className="text-[#c5a059]" /> Video Memories
                   </h2>
-                  <p className="text-xs text-[#6e6e73]">Upload short clips, birthday wishes, and special messages.</p>
+                  <p className="text-xs text-[#6e6e73]">Upload clips (Max 50MB) or add external video links.</p>
                 </div>
-                <div className="relative">
-                  <button 
-                    disabled={isUploadingVideo}
-                    className="px-6 py-2.5 rounded-full bg-[#1d1d1f] text-white text-xs font-bold uppercase tracking-widest shadow-md hover:bg-black transition-all flex items-center gap-2"
-                  >
-                    {isUploadingVideo ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                    Add Videos
-                  </button>
-                  <input 
-                    type="file" 
-                    multiple 
-                    accept="video/*" 
-                    onChange={(e) => handleFileUpload(e, 'video')}
-                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                <div className="flex gap-3">
+                  <div className="relative">
+                    <button 
+                      disabled={isUploadingVideo}
+                      className="px-6 py-2.5 rounded-full bg-[#1d1d1f] text-white text-xs font-bold uppercase tracking-widest shadow-md hover:bg-black transition-all flex items-center gap-2"
+                    >
+                      {isUploadingVideo ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                      Add Videos
+                    </button>
+                    <input 
+                      type="file" 
+                      multiple 
+                      accept="video/*" 
+                      onChange={(e) => handleFileUpload(e, 'video')}
+                      className="absolute inset-0 opacity-0 cursor-pointer" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* External Video Link Fallback */}
+              <div className="mb-8 p-6 rounded-3xl bg-black/5 border border-black/5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-[#c5a059] mb-2 block">Add via Link (YouTube/Drive/MP4 Link)</label>
+                <div className="flex gap-2">
+                  <input
+                    id="ext-video-link"
+                    type="text"
+                    placeholder="https://..."
+                    className="flex-1 bg-white border border-black/5 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c5a05920]"
                   />
+                  <button 
+                    onClick={() => {
+                      const input = document.getElementById('ext-video-link') as HTMLInputElement;
+                      if (input.value) {
+                        setVideoUrls([...videoUrls, input.value]);
+                        input.value = "";
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-[#c5a059] text-white text-xs font-bold"
+                  >
+                    Add
+                  </button>
                 </div>
               </div>
               
