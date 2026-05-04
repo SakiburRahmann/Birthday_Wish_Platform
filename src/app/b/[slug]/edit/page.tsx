@@ -1,13 +1,15 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import FestiveBackground from "@/components/FestiveBackground";
-import { ArrowLeft, Save, Camera, FileText, Calendar, Lock, Loader2, CheckCircle, ExternalLink, Sparkles, Image as ImageIcon, Music, Link as LinkIcon } from "lucide-react";
+import { 
+  ArrowLeft, Save, Camera, FileText, Calendar, Lock, Loader2, CheckCircle, 
+  Sparkles, Image as ImageIcon, Music, Link as LinkIcon, Plus, Trash2, 
+  ChevronRight, QrCode, Download, Share2 
+} from "lucide-react";
 import Link from "next/link";
 
 export default function EditProfile() {
@@ -28,6 +30,13 @@ export default function EditProfile() {
   const [musicUrl, setMusicUrl] = useState("");
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
+  
+  // Gallery State
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  
+  // Milestones State
+  const [milestones, setMilestones] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchEvent() {
@@ -44,6 +53,8 @@ export default function EditProfile() {
         setBio(data.bio || "");
         setMusicUrl(data.music_url || "");
         setCurrentImageUrl(data.profile_image_url || "");
+        setGalleryUrls(data.gallery || []);
+        setMilestones(data.milestone_years || []);
       }
       setIsLoading(false);
     }
@@ -57,6 +68,50 @@ export default function EditProfile() {
     } else {
       alert("Incorrect password.");
     }
+  };
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploadingGallery(true);
+    const newUrls = [...galleryUrls];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage
+        .from("media")
+        .upload(`gallery/${fileName}`, file);
+
+      if (!error) {
+        const { data: publicUrlData } = supabase.storage
+          .from("media")
+          .getPublicUrl(`gallery/${fileName}`);
+        newUrls.push(publicUrlData.publicUrl);
+      }
+    }
+
+    setGalleryUrls(newUrls);
+    setIsUploadingGallery(false);
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setGalleryUrls(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const addMilestone = () => {
+    setMilestones([...milestones, { year: new Date().getFullYear().toString(), title: "New Milestone", note: "" }]);
+  };
+
+  const updateMilestone = (index: number, field: string, value: string) => {
+    const newMilestones = [...milestones];
+    newMilestones[index][field] = value;
+    setMilestones(newMilestones);
+  };
+
+  const removeMilestone = (index: number) => {
+    setMilestones(milestones.filter((_, i) => i !== index));
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -87,6 +142,8 @@ export default function EditProfile() {
         bio: bio,
         music_url: musicUrl,
         profile_image_url: finalImageUrl,
+        gallery: galleryUrls,
+        milestone_years: milestones,
       })
       .eq("id", event.id);
 
@@ -106,11 +163,7 @@ export default function EditProfile() {
     return (
       <div className="min-h-screen relative bg-[#fdfdfd] flex items-center justify-center p-6 font-sans">
         <FestiveBackground />
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          className="max-w-md w-full glass p-10 rounded-[40px] shadow-2xl relative z-10"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full glass p-10 rounded-[40px] shadow-2xl relative z-10">
           <div className="text-center mb-8">
             <div className="w-16 h-16 rounded-full bg-[#f5f5f7] flex items-center justify-center mx-auto mb-4 text-[#1d1d1f]">
               <Lock size={24} />
@@ -129,9 +182,6 @@ export default function EditProfile() {
             <button className="w-full py-4 rounded-2xl bg-[#1d1d1f] text-white font-medium shadow-lg hover:bg-black transition-all btn-shimmer">
               Unlock Studio
             </button>
-            <Link href={`/b/${slug}`} className="block text-center text-sm text-[#6e6e73] hover:text-[#1d1d1f] transition-all">
-              Back to public page
-            </Link>
           </form>
         </motion.div>
       </div>
@@ -139,7 +189,7 @@ export default function EditProfile() {
   }
 
   return (
-    <div className="min-h-screen relative bg-white font-sans pb-20">
+    <div className="min-h-screen relative bg-white font-sans pb-32">
       <FestiveBackground />
       
       <nav className="sticky top-0 z-50 glass border-b border-black/5 px-6 py-4">
@@ -148,18 +198,7 @@ export default function EditProfile() {
             <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Exit to Public Profile
           </Link>
           <div className="flex items-center gap-6">
-            <AnimatePresence>
-              {isSuccess && (
-                <motion.span 
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="text-sm text-green-600 flex items-center gap-1 font-medium"
-                >
-                  <CheckCircle size={14} /> Changes Saved
-                </motion.span>
-              )}
-            </AnimatePresence>
+            {isSuccess && <span className="text-sm text-green-600 flex items-center gap-1 font-medium"><CheckCircle size={14} /> Changes Saved</span>}
             <button
               onClick={handleSave}
               disabled={isSaving}
@@ -172,23 +211,38 @@ export default function EditProfile() {
         </div>
       </nav>
 
-      <main className="relative z-10 max-w-6xl mx-auto px-6 pt-16 space-y-16">
-        <header className="flex justify-between items-end">
+      <main className="relative z-10 max-w-6xl mx-auto px-6 pt-16 space-y-20">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div className="space-y-2">
-            <h1 className="text-4xl md:text-5xl font-serif text-[#1d1d1f] flex items-center gap-3">
+            <h1 className="text-4xl md:text-6xl font-serif text-[#1d1d1f] flex items-center gap-3">
               <Sparkles className="text-[#c5a059]" /> Celebration Studio
             </h1>
             <p className="text-[#6e6e73] text-lg">Curate every detail of {name}'s special day.</p>
           </div>
+          
+          {/* Quick Actions / QR Code */}
+          <div className="flex gap-3">
+            <div className="p-4 rounded-3xl glass shadow-md border-white/50 flex items-center gap-4">
+              <div className="bg-white p-2 rounded-xl shadow-sm border border-black/5">
+                <QrCode size={40} className="text-[#1d1d1f]" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">Guest Access QR</p>
+                <div className="flex gap-2">
+                  <button onClick={() => window.print()} className="text-[10px] font-medium text-[#c5a059] flex items-center gap-1 hover:underline">
+                    <Download size={10} /> Print for Party
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* Sidebar: Visuals */}
+          {/* Sidebar: Media & Assets */}
           <div className="lg:col-span-4 space-y-8">
-            <motion.div 
-              whileHover={{ y: -5 }}
-              className="glass p-8 rounded-[40px] shadow-xl border-white/50"
-            >
+            {/* Profile Portrait */}
+            <section className="glass p-8 rounded-[40px] shadow-xl border-white/50">
               <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059] block mb-6">Profile Portrait</label>
               <div className="aspect-square rounded-[32px] bg-[#f5f5f7] border-2 border-dashed border-black/5 flex flex-col items-center justify-center overflow-hidden relative group">
                 {currentImageUrl || profileImage ? (
@@ -210,45 +264,33 @@ export default function EditProfile() {
                   className="absolute inset-0 opacity-0 cursor-pointer" 
                 />
               </div>
-            </motion.div>
+            </section>
 
-            <div className="glass p-8 rounded-[40px] shadow-lg border-white/50 space-y-4">
+            {/* Music Section */}
+            <section className="glass p-8 rounded-[40px] shadow-lg border-white/50 space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-widest text-[#c5a059] flex items-center gap-2">
                 <Music size={14} /> Background Music
               </h3>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">MP3 Direct Link</label>
-                  <div className="relative">
-                    <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6e6e73]" />
-                    <input
-                      type="text"
-                      placeholder="https://example.com/song.mp3"
-                      value={musicUrl}
-                      onChange={(e) => setMusicUrl(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 rounded-xl border border-black/5 bg-[#fdfdfd] text-xs focus:outline-none focus:ring-2 focus:ring-[#c5a05920] transition-all"
-                    />
-                  </div>
-                </div>
-                <p className="text-[10px] text-[#6e6e73] leading-relaxed italic">
-                  Paste a direct link to an MP3 file (e.g., from Dropbox or a public URL) to play background music on the profile.
-                </p>
+              <div className="relative">
+                <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6e6e73]" />
+                <input
+                  type="text"
+                  placeholder="Direct MP3 URL..."
+                  value={musicUrl}
+                  onChange={(e) => setMusicUrl(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-black/5 bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#c5a05920] transition-all"
+                />
               </div>
-            </div>
+            </section>
           </div>
 
-          {/* Main Editor */}
-          <div className="lg:col-span-8 space-y-8">
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="glass p-10 rounded-[40px] shadow-xl border-white/50 space-y-10"
-            >
+          {/* Main Editor Sections */}
+          <div className="lg:col-span-8 space-y-12">
+            {/* Essential Details */}
+            <section className="glass p-10 rounded-[40px] shadow-xl border-white/50 space-y-10">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
-                  <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059] flex items-center gap-2">
-                    Full Name
-                  </label>
+                  <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059]">Birthday Person</label>
                   <input
                     type="text"
                     value={name}
@@ -257,9 +299,7 @@ export default function EditProfile() {
                   />
                 </div>
                 <div className="space-y-3">
-                  <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059] flex items-center gap-2">
-                    Birthday Date
-                  </label>
+                  <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059]">Birthday Date</label>
                   <input
                     type="date"
                     value={date}
@@ -270,18 +310,144 @@ export default function EditProfile() {
               </div>
 
               <div className="space-y-3">
-                <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059] flex items-center gap-2">
-                  Biography / Story
-                </label>
+                <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059]">Intro Story / Bio</label>
                 <textarea
-                  rows={8}
+                  rows={6}
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  placeholder="Share a story or a warm welcome message..."
+                  placeholder="Share a heartfelt introduction..."
                   className="w-full px-6 py-4 rounded-2xl border border-black/5 bg-white focus:outline-none focus:ring-2 focus:ring-[#c5a05920] focus:border-[#c5a059] transition-all resize-none text-lg leading-relaxed shadow-sm"
                 />
               </div>
-            </motion.div>
+            </section>
+
+            {/* Memory Wall (Gallery) */}
+            <section className="glass p-10 rounded-[40px] shadow-xl border-white/50">
+              <div className="flex justify-between items-center mb-10">
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-serif text-[#1d1d1f] flex items-center gap-3">
+                    <ImageIcon size={24} className="text-[#c5a059]" /> Memory Wall
+                  </h2>
+                  <p className="text-xs text-[#6e6e73]">Upload childhood photos, funny moments, and more.</p>
+                </div>
+                <div className="relative">
+                  <button 
+                    disabled={isUploadingGallery}
+                    className="px-6 py-2.5 rounded-full bg-[#c5a059] text-white text-xs font-bold uppercase tracking-widest shadow-md hover:bg-[#b58a49] transition-all flex items-center gap-2"
+                  >
+                    {isUploadingGallery ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                    Add Photos
+                  </button>
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*" 
+                    onChange={handleGalleryUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {galleryUrls.map((url, i) => (
+                  <motion.div 
+                    key={i}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="aspect-square rounded-2xl overflow-hidden relative group shadow-sm border border-black/5"
+                  >
+                    <img src={url} className="w-full h-full object-cover" />
+                    <button 
+                      onClick={() => removeGalleryImage(i)}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </motion.div>
+                ))}
+                {galleryUrls.length === 0 && (
+                  <div className="col-span-full py-16 text-center border-2 border-dashed border-black/5 rounded-[32px] text-[#6e6e73]/40 flex flex-col items-center gap-2">
+                    <ImageIcon size={32} />
+                    <p className="text-sm font-medium">No photos in the gallery yet.</p>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Life Journey (Milestones) */}
+            <section className="glass p-10 rounded-[40px] shadow-xl border-white/50">
+              <div className="flex justify-between items-center mb-10">
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-serif text-[#1d1d1f] flex items-center gap-3">
+                    <Sparkles size={24} className="text-[#c5a059]" /> Life Journey
+                  </h2>
+                  <p className="text-xs text-[#6e6e73]">Add key milestones and memories from through the years.</p>
+                </div>
+                <button 
+                  onClick={addMilestone}
+                  className="px-6 py-2.5 rounded-full border border-[#c5a05920] text-[#c5a059] text-xs font-bold uppercase tracking-widest hover:bg-[#c5a05905] transition-all flex items-center gap-2"
+                >
+                  <Plus size={14} /> Add Year
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <AnimatePresence>
+                  {milestones.map((ms, i) => (
+                    <motion.div 
+                      key={i}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      className="p-6 rounded-3xl bg-black/5 border border-black/5 flex flex-col md:flex-row gap-4 items-start"
+                    >
+                      <div className="w-24 shrink-0">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73] mb-1 block">Year</label>
+                        <input
+                          type="text"
+                          value={ms.year}
+                          onChange={(e) => updateMilestone(i, "year", e.target.value)}
+                          className="w-full bg-white border border-black/5 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c5a05920]"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-3">
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73] mb-1 block">Event Title</label>
+                          <input
+                            type="text"
+                            value={ms.title}
+                            onChange={(e) => updateMilestone(i, "title", e.target.value)}
+                            className="w-full bg-white border border-black/5 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c5a05920]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73] mb-1 block">Memory Note</label>
+                          <textarea
+                            rows={2}
+                            value={ms.note}
+                            onChange={(e) => updateMilestone(i, "note", e.target.value)}
+                            placeholder="A short note about this year..."
+                            className="w-full bg-white border border-black/5 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c5a05920] resize-none"
+                          />
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => removeMilestone(i)}
+                        className="mt-6 p-2 rounded-xl text-[#6e6e73]/40 hover:text-red-500 hover:bg-red-50 transition-all"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                {milestones.length === 0 && (
+                  <div className="py-12 text-center text-[#6e6e73]/30 italic text-sm">
+                    No milestones added yet. Start the story!
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
         </div>
       </main>
