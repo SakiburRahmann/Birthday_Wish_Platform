@@ -32,6 +32,15 @@ export default function Home() {
                 Create Birthday Page <ArrowRight size={20} />
               </motion.button>
             </Link>
+            <Link href="/login">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-8 py-4 rounded-xl bg-white border border-black/10 text-[#1d1d1f] font-medium text-lg flex items-center gap-3 shadow-sm hover:shadow-md transition-all"
+              >
+                Manage Existing Page
+              </motion.button>
+            </Link>
           </div>
         </motion.div>
 
