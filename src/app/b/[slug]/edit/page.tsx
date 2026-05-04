@@ -8,7 +8,7 @@ import FestiveBackground from "@/components/FestiveBackground";
 import { 
   ArrowLeft, Save, Camera, FileText, Calendar, Lock, Loader2, CheckCircle, 
   Sparkles, Image as ImageIcon, Music, Link as LinkIcon, Plus, Trash2, 
-  ChevronRight, QrCode, Download, Share2 
+  ChevronRight, QrCode, Download, Share2, Video, Play 
 } from "lucide-react";
 import Link from "next/link";
 
@@ -31,9 +31,11 @@ export default function EditProfile() {
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
   
-  // Gallery State
+  // Gallery & Video State
   const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+  const [videoUrls, setVideoUrls] = useState<string[]>([]);
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   
   // Milestones State
   const [milestones, setMilestones] = useState<any[]>([]);
@@ -54,6 +56,7 @@ export default function EditProfile() {
         setMusicUrl(data.music_url || "");
         setCurrentImageUrl(data.profile_image_url || "");
         setGalleryUrls(data.gallery || []);
+        setVideoUrls(data.videos || []);
         setMilestones(data.milestone_years || []);
       }
       setIsLoading(false);
@@ -70,34 +73,42 @@ export default function EditProfile() {
     }
   };
 
-  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'gallery' | 'video') => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    setIsUploadingGallery(true);
-    const newUrls = [...galleryUrls];
+    if (type === 'gallery') setIsUploadingGallery(true);
+    else setIsUploadingVideo(true);
+
+    const newUrls = type === 'gallery' ? [...galleryUrls] : [...videoUrls];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const fileName = `${Date.now()}-${file.name}`;
       const { data, error } = await supabase.storage
         .from("media")
-        .upload(`gallery/${fileName}`, file);
+        .upload(`${type}/${fileName}`, file);
 
       if (!error) {
         const { data: publicUrlData } = supabase.storage
           .from("media")
-          .getPublicUrl(`gallery/${fileName}`);
+          .getPublicUrl(`${type}/${fileName}`);
         newUrls.push(publicUrlData.publicUrl);
       }
     }
 
-    setGalleryUrls(newUrls);
-    setIsUploadingGallery(false);
+    if (type === 'gallery') {
+      setGalleryUrls(newUrls);
+      setIsUploadingGallery(false);
+    } else {
+      setVideoUrls(newUrls);
+      setIsUploadingVideo(false);
+    }
   };
 
-  const removeGalleryImage = (index: number) => {
-    setGalleryUrls(prev => prev.filter((_, i) => i !== index));
+  const removeFile = (index: number, type: 'gallery' | 'video') => {
+    if (type === 'gallery') setGalleryUrls(prev => prev.filter((_, i) => i !== index));
+    else setVideoUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const addMilestone = () => {
@@ -143,6 +154,7 @@ export default function EditProfile() {
         music_url: musicUrl,
         profile_image_url: finalImageUrl,
         gallery: galleryUrls,
+        videos: videoUrls,
         milestone_years: milestones,
       })
       .eq("id", event.id);
@@ -220,7 +232,6 @@ export default function EditProfile() {
             <p className="text-[#6e6e73] text-lg">Curate every detail of {name}'s special day.</p>
           </div>
           
-          {/* Quick Actions / QR Code */}
           <div className="flex gap-3">
             <div className="p-4 rounded-3xl glass shadow-md border-white/50 flex items-center gap-4">
               <div className="bg-white p-2 rounded-xl shadow-sm border border-black/5">
@@ -342,7 +353,7 @@ export default function EditProfile() {
                     type="file" 
                     multiple 
                     accept="image/*" 
-                    onChange={handleGalleryUpload}
+                    onChange={(e) => handleFileUpload(e, 'gallery')}
                     className="absolute inset-0 opacity-0 cursor-pointer" 
                   />
                 </div>
@@ -359,19 +370,64 @@ export default function EditProfile() {
                   >
                     <img src={url} className="w-full h-full object-cover" />
                     <button 
-                      onClick={() => removeGalleryImage(i)}
+                      onClick={() => removeFile(i, 'gallery')}
                       className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-lg"
                     >
                       <Trash2 size={14} />
                     </button>
                   </motion.div>
                 ))}
-                {galleryUrls.length === 0 && (
-                  <div className="col-span-full py-16 text-center border-2 border-dashed border-black/5 rounded-[32px] text-[#6e6e73]/40 flex flex-col items-center gap-2">
-                    <ImageIcon size={32} />
-                    <p className="text-sm font-medium">No photos in the gallery yet.</p>
-                  </div>
-                )}
+              </div>
+            </section>
+
+            {/* Video Wall */}
+            <section className="glass p-10 rounded-[40px] shadow-xl border-white/50">
+              <div className="flex justify-between items-center mb-10">
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-serif text-[#1d1d1f] flex items-center gap-3">
+                    <Video size={24} className="text-[#c5a059]" /> Video Memories
+                  </h2>
+                  <p className="text-xs text-[#6e6e73]">Upload short clips, birthday wishes, and special messages.</p>
+                </div>
+                <div className="relative">
+                  <button 
+                    disabled={isUploadingVideo}
+                    className="px-6 py-2.5 rounded-full bg-[#1d1d1f] text-white text-xs font-bold uppercase tracking-widest shadow-md hover:bg-black transition-all flex items-center gap-2"
+                  >
+                    {isUploadingVideo ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                    Add Videos
+                  </button>
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="video/*" 
+                    onChange={(e) => handleFileUpload(e, 'video')}
+                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {videoUrls.map((url, i) => (
+                  <motion.div 
+                    key={i}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="aspect-video rounded-2xl overflow-hidden relative group shadow-sm border border-black/5 bg-black/5"
+                  >
+                    <video src={url} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-all">
+                      <Play size={32} className="text-white opacity-80" />
+                    </div>
+                    <button 
+                      onClick={() => removeFile(i, 'video')}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-lg z-10"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </motion.div>
+                ))}
               </div>
             </section>
 
@@ -441,11 +497,6 @@ export default function EditProfile() {
                     </motion.div>
                   ))}
                 </AnimatePresence>
-                {milestones.length === 0 && (
-                  <div className="py-12 text-center text-[#6e6e73]/30 italic text-sm">
-                    No milestones added yet. Start the story!
-                  </div>
-                )}
               </div>
             </section>
           </div>

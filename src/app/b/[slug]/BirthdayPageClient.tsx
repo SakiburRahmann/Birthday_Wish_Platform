@@ -286,6 +286,36 @@ export function BirthdayPageClient({ initialEvent, slug }: { initialEvent: any, 
           </section>
         )}
 
+        {/* Video Wall */}
+        {event.videos && event.videos.length > 0 && (
+          <section className="space-y-16">
+            <div className="text-center space-y-4">
+              <h2 className="text-4xl md:text-6xl font-serif text-[#1d1d1f]">Video Memories</h2>
+              <p className="text-[#6e6e73] font-light italic">Heartfelt messages and special clips saved forever.</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {event.videos.map((url: string, i: number) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  className="rounded-[40px] overflow-hidden glass p-4 shadow-2xl relative group"
+                >
+                  <div className="rounded-[28px] overflow-hidden aspect-video bg-black/5">
+                    <video 
+                      src={url} 
+                      controls 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Wishes Section */}
         <section id="guestbook" className="space-y-16">
           <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-6 border-b border-black/5 pb-8">
