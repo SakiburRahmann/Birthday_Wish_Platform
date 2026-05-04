@@ -89,57 +89,29 @@ export default function EditProfile() {
       const file = files[i];
       const fileName = `${Date.now()}-${file.name}`;
       
+      // Free Tier Limit Check (50MB)
+      const MAX_FILE_SIZE = 50 * 1024 * 1024;
+      if (file.size > MAX_FILE_SIZE) {
+        setIsUploadingVideo(false);
+        setIsUploadingGallery(false);
+        alert(`File too large: "${file.name}" is ${(file.size / (1024 * 1024)).toFixed(1)}MB.\n\nThe free server limits uploads to 50MB per file.\n\nPlease use the "Add via Link" option below for large videos (YouTube/Google Drive), or compress the video before uploading.`);
+        return;
+      }
+      
       try {
-        if (type === 'video') {
-          // Direct chunked upload to Supabase using TUS protocol (bypasses 50MB payload limits)
-          await new Promise<void>((resolve, reject) => {
-            const upload = new tus.Upload(file, {
-              endpoint: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/upload/resumable`,
-              retryDelays: [0, 3000, 5000, 10000, 20000],
-              headers: {
-                authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-              },
-              uploadDataDuringCreation: true,
-              removeFingerprintOnSuccess: true,
-              metadata: {
-                bucketName: 'media',
-                objectName: `${type}/${fileName}`,
-                contentType: file.type || 'video/mp4',
-              },
-              chunkSize: 6 * 1024 * 1024, // 6MB chunks
-              onError: function (error) {
-                reject(error);
-              },
-              onProgress: function (bytesUploaded, bytesTotal) {
-                const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(0);
-                setUploadProgress(Number(percentage));
-              },
-              onSuccess: function () {
-                const { data: publicUrlData } = supabase.storage
-                  .from("media")
-                  .getPublicUrl(`${type}/${fileName}`);
-                newUrls.push(publicUrlData.publicUrl);
-                resolve();
-              }
-            });
-            upload.start();
+        const { data, error } = await supabase.storage
+          .from("media")
+          .upload(`${type}/${fileName}`, file, {
+            cacheControl: '3600',
+            upsert: false
           });
-        } else {
-          // Use Supabase for images
-          const { data, error } = await supabase.storage
-            .from("media")
-            .upload(`${type}/${fileName}`, file, {
-              cacheControl: '3600',
-              upsert: false
-            });
 
-          if (error) throw error;
+        if (error) throw error;
 
-          const { data: publicUrlData } = supabase.storage
-            .from("media")
-            .getPublicUrl(`${type}/${fileName}`);
-          newUrls.push(publicUrlData.publicUrl);
-        }
+        const { data: publicUrlData } = supabase.storage
+          .from("media")
+          .getPublicUrl(`${type}/${fileName}`);
+        newUrls.push(publicUrlData.publicUrl);
       } catch (error: any) {
         console.error("Upload error:", error);
         alert(`Upload failed (${file.name}): ${error.message}`);
