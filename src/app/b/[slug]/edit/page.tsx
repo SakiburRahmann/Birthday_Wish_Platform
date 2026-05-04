@@ -85,23 +85,40 @@ export default function EditProfile() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const fileName = `${Date.now()}-${file.name}`;
-      const { data, error } = await supabase.storage
-        .from("media")
-        .upload(`${type}/${fileName}`, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      
+      try {
+        if (type === 'video') {
+          // Use Vercel Blob for larger videos (250MB limit)
+          const response = await fetch(`/api/upload?filename=${fileName}`, {
+            method: 'POST',
+            body: file,
+          });
+          const blob = await response.json();
+          if (blob.url) {
+            newUrls.push(blob.url);
+          } else {
+            throw new Error(blob.error || 'Upload failed');
+          }
+        } else {
+          // Use Supabase for images
+          const { data, error } = await supabase.storage
+            .from("media")
+            .upload(`${type}/${fileName}`, file, {
+              cacheControl: '3600',
+              upsert: false
+            });
 
-      if (error) {
+          if (error) throw error;
+
+          const { data: publicUrlData } = supabase.storage
+            .from("media")
+            .getPublicUrl(`${type}/${fileName}`);
+          newUrls.push(publicUrlData.publicUrl);
+        }
+      } catch (error: any) {
         console.error("Upload error:", error);
         alert(`Upload failed (${file.name}): ${error.message}`);
-        continue;
       }
-
-      const { data: publicUrlData } = supabase.storage
-        .from("media")
-        .getPublicUrl(`${type}/${fileName}`);
-      newUrls.push(publicUrlData.publicUrl);
     }
 
     if (type === 'gallery') {
