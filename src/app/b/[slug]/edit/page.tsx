@@ -87,14 +87,21 @@ export default function EditProfile() {
       const fileName = `${Date.now()}-${file.name}`;
       const { data, error } = await supabase.storage
         .from("media")
-        .upload(`${type}/${fileName}`, file);
+        .upload(`${type}/${fileName}`, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      if (!error) {
-        const { data: publicUrlData } = supabase.storage
-          .from("media")
-          .getPublicUrl(`${type}/${fileName}`);
-        newUrls.push(publicUrlData.publicUrl);
+      if (error) {
+        console.error("Upload error:", error);
+        alert(`Upload failed (${file.name}): ${error.message}`);
+        continue;
       }
+
+      const { data: publicUrlData } = supabase.storage
+        .from("media")
+        .getPublicUrl(`${type}/${fileName}`);
+      newUrls.push(publicUrlData.publicUrl);
     }
 
     if (type === 'gallery') {
