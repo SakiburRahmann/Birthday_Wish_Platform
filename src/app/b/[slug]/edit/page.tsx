@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Save, Camera, FileText, Calendar, Lock, Loader2, CheckCircle, ExternalLink } from "lucide-react";
+import FestiveBackground from "@/components/FestiveBackground";
+import { ArrowLeft, Save, Camera, FileText, Calendar, Lock, Loader2, CheckCircle, ExternalLink, Sparkles, Image as ImageIcon, Music } from "lucide-react";
 import Link from "next/link";
 
 export default function EditProfile() {
@@ -93,32 +94,37 @@ export default function EditProfile() {
     setIsSaving(false);
   };
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-[#fdfdfd]"><Loader2 className="animate-spin text-[#c5a059]" /></div>;
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-[#fdfdfd]"><motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity }}><Loader2 size={32} className="text-[#c5a059]" /></motion.div></div>;
   if (!event) return <div className="min-h-screen flex items-center justify-center">Profile not found.</div>;
 
   if (!isAuthorized) {
     return (
-      <div className="min-h-screen bg-[#fdfdfd] flex items-center justify-center p-6 font-sans">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md w-full bg-white p-8 rounded-3xl border border-black/5 shadow-xl">
+      <div className="min-h-screen relative bg-[#fdfdfd] flex items-center justify-center p-6 font-sans">
+        <FestiveBackground />
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="max-w-md w-full glass p-10 rounded-[40px] shadow-2xl relative z-10"
+        >
           <div className="text-center mb-8">
-            <div className="w-12 h-12 rounded-full bg-[#f5f5f7] flex items-center justify-center mx-auto mb-4 text-[#1d1d1f]">
-              <Lock size={20} />
+            <div className="w-16 h-16 rounded-full bg-[#f5f5f7] flex items-center justify-center mx-auto mb-4 text-[#1d1d1f]">
+              <Lock size={24} />
             </div>
-            <h1 className="text-2xl font-serif text-[#1d1d1f]">Manage Profile</h1>
-            <p className="text-sm text-[#6e6e73] mt-1">Enter your password to edit this page.</p>
+            <h1 className="text-3xl font-serif text-[#1d1d1f]">Studio Access</h1>
+            <p className="text-sm text-[#6e6e73] mt-2">Enter your password to customize this celebration.</p>
           </div>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-6">
             <input
               type="password"
               placeholder="Enter Management Password"
               value={passwordInput}
               onChange={(e) => setPasswordInput(e.target.value)}
-              className="w-full px-5 py-3 rounded-xl border border-black/5 bg-[#fdfdfd] focus:outline-none focus:ring-2 focus:ring-[#c5a05920] focus:border-[#c5a059] transition-all"
+              className="w-full px-6 py-4 rounded-2xl border border-black/5 bg-white focus:outline-none focus:ring-2 focus:ring-[#c5a05920] focus:border-[#c5a059] transition-all text-lg shadow-sm"
             />
-            <button className="w-full py-3.5 rounded-xl bg-[#1d1d1f] text-white font-medium shadow-md hover:bg-black transition-all">
-              Login to Dashboard
+            <button className="w-full py-4 rounded-2xl bg-[#1d1d1f] text-white font-medium shadow-lg hover:bg-black transition-all btn-shimmer">
+              Unlock Studio
             </button>
-            <Link href={`/b/${slug}`} className="block text-center text-xs text-[#6e6e73] hover:text-[#1d1d1f]">
+            <Link href={`/b/${slug}`} className="block text-center text-sm text-[#6e6e73] hover:text-[#1d1d1f] transition-all">
               Back to public page
             </Link>
           </form>
@@ -128,18 +134,31 @@ export default function EditProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fdfdfd] font-sans pb-20">
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-black/5 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <Link href={`/b/${slug}`} className="text-sm font-medium text-[#6e6e73] hover:text-[#1d1d1f] flex items-center gap-2">
-            <ArrowLeft size={16} /> View Profile
+    <div className="min-h-screen relative bg-white font-sans pb-20">
+      <FestiveBackground />
+      
+      <nav className="sticky top-0 z-50 glass border-b border-black/5 px-6 py-4">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <Link href={`/b/${slug}`} className="group flex items-center gap-2 text-sm font-medium text-[#6e6e73] hover:text-[#1d1d1f] transition-all">
+            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Exit to Public Profile
           </Link>
-          <div className="flex items-center gap-4">
-            {isSuccess && <span className="text-sm text-green-600 flex items-center gap-1 font-medium"><CheckCircle size={14} /> Saved</span>}
+          <div className="flex items-center gap-6">
+            <AnimatePresence>
+              {isSuccess && (
+                <motion.span 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="text-sm text-green-600 flex items-center gap-1 font-medium"
+                >
+                  <CheckCircle size={14} /> Changes Saved
+                </motion.span>
+              )}
+            </AnimatePresence>
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="px-6 py-2 rounded-full bg-[#1d1d1f] text-white text-sm font-medium flex items-center gap-2 shadow-md hover:bg-black transition-all disabled:opacity-50"
+              className="px-8 py-2.5 rounded-full bg-[#1d1d1f] text-white text-sm font-medium flex items-center gap-2 shadow-lg hover:bg-black transition-all disabled:opacity-50 btn-shimmer"
             >
               {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               Save Changes
@@ -148,28 +167,36 @@ export default function EditProfile() {
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-6 pt-12 space-y-12">
-        <header className="space-y-2">
-          <h1 className="text-3xl font-serif text-[#1d1d1f]">Dashboard</h1>
-          <p className="text-[#6e6e73]">Customize the birthday profile and add content.</p>
+      <main className="relative z-10 max-w-6xl mx-auto px-6 pt-16 space-y-16">
+        <header className="flex justify-between items-end">
+          <div className="space-y-2">
+            <h1 className="text-4xl md:text-5xl font-serif text-[#1d1d1f] flex items-center gap-3">
+              <Sparkles className="text-[#c5a059]" /> Celebration Studio
+            </h1>
+            <p className="text-[#6e6e73] text-lg">Curate every detail of {name}'s special day.</p>
+          </div>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          {/* Left Column: Media */}
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-[#6e6e73]">Profile Photo</label>
-              <div className="aspect-square rounded-3xl bg-[#f5f5f7] border-2 border-dashed border-black/5 flex flex-col items-center justify-center overflow-hidden relative group">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          {/* Sidebar: Visuals */}
+          <div className="lg:col-span-4 space-y-8">
+            <motion.div 
+              whileHover={{ y: -5 }}
+              className="glass p-8 rounded-[40px] shadow-xl border-white/50"
+            >
+              <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059] block mb-6">Profile Portrait</label>
+              <div className="aspect-square rounded-[32px] bg-[#f5f5f7] border-2 border-dashed border-black/5 flex flex-col items-center justify-center overflow-hidden relative group">
                 {currentImageUrl || profileImage ? (
                   <img 
                     src={profileImage ? URL.createObjectURL(profileImage) : currentImageUrl} 
                     className="w-full h-full object-cover" 
                   />
                 ) : (
-                  <Camera size={32} className="text-[#6e6e73]/20" />
+                  <Camera size={48} className="text-[#6e6e73]/20" />
                 )}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center cursor-pointer">
-                  <span className="text-white text-xs font-medium">Change Photo</span>
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center cursor-pointer">
+                  <Camera size={24} className="text-white mb-2" />
+                  <span className="text-white text-xs font-bold">Replace Photo</span>
                 </div>
                 <input 
                   type="file" 
@@ -178,57 +205,88 @@ export default function EditProfile() {
                   className="absolute inset-0 opacity-0 cursor-pointer" 
                 />
               </div>
-            </div>
-          </div>
+              <p className="text-[10px] text-[#6e6e73] mt-4 text-center">Recommended: Square portrait, min 800x800px.</p>
+            </motion.div>
 
-          {/* Right Column: Details */}
-          <div className="md:col-span-2 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-[#6e6e73]">Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-5 py-3 rounded-xl border border-black/5 bg-white focus:outline-none focus:ring-2 focus:ring-[#c5a05920] focus:border-[#c5a059] transition-all"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-[#6e6e73]">Date of Birth</label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-5 py-3 rounded-xl border border-black/5 bg-white focus:outline-none focus:ring-2 focus:ring-[#c5a05920] focus:border-[#c5a059] transition-all"
-                />
+            <div className="glass p-8 rounded-[40px] shadow-lg border-white/50 space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-[#c5a059] flex items-center gap-2">
+                <Music size={14} /> Ambient Sound
+              </h3>
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-black/5">
+                <span className="text-xs font-medium">Festive Piano Mix</span>
+                <div className="w-8 h-4 rounded-full bg-[#1d1d1f] relative">
+                  <div className="absolute right-1 top-1 w-2 h-2 rounded-full bg-white" />
+                </div>
               </div>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-[#6e6e73]">Bio / Introduction</label>
-              <textarea
-                rows={6}
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Write something about the birthday person..."
-                className="w-full px-5 py-3 rounded-xl border border-black/5 bg-white focus:outline-none focus:ring-2 focus:ring-[#c5a05920] focus:border-[#c5a059] transition-all resize-none"
-              />
-            </div>
           </div>
-        </div>
 
-        {/* Gallery Section Placeholder */}
-        <div className="pt-12 border-t border-black/5">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-serif text-[#1d1d1f]">Photo Gallery</h2>
-            <button className="text-sm font-medium text-[#c5a059] flex items-center gap-1 hover:underline">
-              <Plus size={16} /> Add Photos
-            </button>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="aspect-square rounded-2xl bg-[#f5f5f7] border-2 border-dashed border-black/5 flex items-center justify-center text-[#6e6e73]/30">
-              Empty
-            </div>
+          {/* Main Editor */}
+          <div className="lg:col-span-8 space-y-8">
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="glass p-10 rounded-[40px] shadow-xl border-white/50 space-y-10"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059] flex items-center gap-2">
+                    <UserIcon size={14} /> Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-6 py-4 rounded-2xl border border-black/5 bg-white focus:outline-none focus:ring-2 focus:ring-[#c5a05920] focus:border-[#c5a059] transition-all text-lg shadow-sm"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059] flex items-center gap-2">
+                    <Calendar size={14} /> Birthday Date
+                  </label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full px-6 py-4 rounded-2xl border border-black/5 bg-white focus:outline-none focus:ring-2 focus:ring-[#c5a05920] focus:border-[#c5a059] transition-all text-lg shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059] flex items-center gap-2">
+                  <FileText size={14} /> Biography / Story
+                </label>
+                <textarea
+                  rows={8}
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Share a story or a warm welcome message..."
+                  className="w-full px-6 py-4 rounded-2xl border border-black/5 bg-white focus:outline-none focus:ring-2 focus:ring-[#c5a05920] focus:border-[#c5a059] transition-all resize-none text-lg leading-relaxed shadow-sm"
+                />
+              </div>
+            </motion.div>
+
+            {/* Gallery Section */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass p-10 rounded-[40px] shadow-xl border-white/50"
+            >
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-serif text-[#1d1d1f] flex items-center gap-3">
+                  <ImageIcon size={24} className="text-[#c5a059]" /> Memory Gallery
+                </h2>
+                <button className="px-5 py-2 rounded-full border border-[#c5a05920] text-[#c5a059] text-xs font-bold uppercase tracking-widest hover:bg-[#c5a05905] transition-all">
+                  + Add Media
+                </button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="aspect-square rounded-[24px] bg-black/5 border-2 border-dashed border-black/5 flex flex-col items-center justify-center text-[#6e6e73]/30">
+                  <span className="text-[10px] font-bold uppercase tracking-tighter">Empty Slot</span>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </main>
@@ -236,11 +294,11 @@ export default function EditProfile() {
   );
 }
 
-function Plus({ size }: { size: number }) {
+function UserIcon({ size }: { size: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19"></line>
-      <line x1="5" y1="12" x2="19" y2="12"></line>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+      <circle cx="12" cy="7" r="4"></circle>
     </svg>
   );
 }

@@ -23,6 +23,7 @@
   body {
     @apply bg-luxe-bg text-luxe-text antialiased;
     font-family: var(--font-sans);
+    overflow-x: hidden;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -44,8 +45,64 @@
   }
 }
 
+/* Festive Background Mesh */
+.bg-festive {
+  background: radial-gradient(circle at 0% 0%, #fffbf2 0%, transparent 50%),
+              radial-gradient(circle at 100% 100%, #f9f0ff 0%, transparent 50%),
+              radial-gradient(circle at 50% 50%, #fffdfd 0%, transparent 100%);
+  position: relative;
+}
+
+.bg-festive::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: url("https://www.transparenttextures.com/patterns/soft-wallpaper.png");
+  opacity: 0.03;
+  pointer-events: none;
+}
+
+/* Animated Sparkle Particles */
+.sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #c5a059;
+  filter: blur(1px);
+  pointer-events: none;
+  animation: float-sparkle 8s infinite ease-in-out;
+}
+
+@keyframes float-sparkle {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0; }
+  50% { transform: translate(20px, -40px) scale(1.5); opacity: 0.6; }
+}
+
 .text-gradient {
   background: linear-gradient(135deg, #1d1d1f 0%, #c5a059 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Shimmer Button */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::after {
+  content: "";
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+  transform: rotate(45deg);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
 }
