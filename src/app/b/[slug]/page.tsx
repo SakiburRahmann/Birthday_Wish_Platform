@@ -99,10 +99,25 @@ export default function BirthdayPage() {
     if (isMusicPlaying) {
       audioRef.current.pause();
     } else {
-      audioRef.current.play();
+      if (event.music_url) {
+        audioRef.current.play();
+      }
     }
     setIsMusicPlaying(!isMusicPlaying);
   };
+
+  useEffect(() => {
+    if (isMusicPlaying && event?.music_url && !audioRef.current) {
+      audioRef.current = new Audio(event.music_url);
+      audioRef.current.loop = true;
+      audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+    } else if (audioRef.current && event?.music_url) {
+      if (audioRef.current.src !== event.music_url) {
+        audioRef.current.src = event.music_url;
+        if (isMusicPlaying) audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+      }
+    }
+  }, [isMusicPlaying, event?.music_url]);
 
   if (isLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#fdfdfd]">
@@ -122,10 +137,14 @@ export default function BirthdayPage() {
 
       {/* Floating Header Controls */}
       <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-6 py-3 rounded-full glass border-white/50 shadow-luxe">
-        <button onClick={toggleMusic} className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/5 transition-all text-[#1d1d1f]">
-          {isMusicPlaying ? <Volume2 size={20} className="animate-pulse" /> : <VolumeX size={20} />}
-        </button>
-        <div className="h-4 w-px bg-black/10 mx-1" />
+        {event.music_url && (
+          <>
+            <button onClick={toggleMusic} className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/5 transition-all text-[#1d1d1f]">
+              {isMusicPlaying ? <Volume2 size={20} className="animate-pulse" /> : <VolumeX size={20} />}
+            </button>
+            <div className="h-4 w-px bg-black/10 mx-1" />
+          </>
+        )}
         <button 
           onClick={() => {
             navigator.clipboard.writeText(window.location.href);

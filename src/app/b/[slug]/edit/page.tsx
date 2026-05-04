@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import FestiveBackground from "@/components/FestiveBackground";
-import { ArrowLeft, Save, Camera, FileText, Calendar, Lock, Loader2, CheckCircle, ExternalLink, Sparkles, Image as ImageIcon, Music } from "lucide-react";
+import { ArrowLeft, Save, Camera, FileText, Calendar, Lock, Loader2, CheckCircle, ExternalLink, Sparkles, Image as ImageIcon, Music, Link as LinkIcon } from "lucide-react";
 import Link from "next/link";
 
 export default function EditProfile() {
@@ -23,6 +23,7 @@ export default function EditProfile() {
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
   const [bio, setBio] = useState("");
+  const [musicUrl, setMusicUrl] = useState("");
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
 
@@ -39,6 +40,7 @@ export default function EditProfile() {
         setName(data.recipient_name);
         setDate(data.birthday_date);
         setBio(data.bio || "");
+        setMusicUrl(data.music_url || "");
         setCurrentImageUrl(data.profile_image_url || "");
       }
       setIsLoading(false);
@@ -81,6 +83,7 @@ export default function EditProfile() {
         recipient_name: name,
         birthday_date: date,
         bio: bio,
+        music_url: musicUrl,
         profile_image_url: finalImageUrl,
       })
       .eq("id", event.id);
@@ -205,18 +208,29 @@ export default function EditProfile() {
                   className="absolute inset-0 opacity-0 cursor-pointer" 
                 />
               </div>
-              <p className="text-[10px] text-[#6e6e73] mt-4 text-center">Recommended: Square portrait, min 800x800px.</p>
             </motion.div>
 
             <div className="glass p-8 rounded-[40px] shadow-lg border-white/50 space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-widest text-[#c5a059] flex items-center gap-2">
-                <Music size={14} /> Ambient Sound
+                <Music size={14} /> Background Music
               </h3>
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-black/5">
-                <span className="text-xs font-medium">Festive Piano Mix</span>
-                <div className="w-8 h-4 rounded-full bg-[#1d1d1f] relative">
-                  <div className="absolute right-1 top-1 w-2 h-2 rounded-full bg-white" />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">MP3 Direct Link</label>
+                  <div className="relative">
+                    <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6e6e73]" />
+                    <input
+                      type="text"
+                      placeholder="https://example.com/song.mp3"
+                      value={musicUrl}
+                      onChange={(e) => setMusicUrl(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 rounded-xl border border-black/5 bg-[#fdfdfd] text-xs focus:outline-none focus:ring-2 focus:ring-[#c5a05920] transition-all"
+                    />
+                  </div>
                 </div>
+                <p className="text-[10px] text-[#6e6e73] leading-relaxed italic">
+                  Paste a direct link to an MP3 file (e.g., from Dropbox or a public URL) to play background music on the profile.
+                </p>
               </div>
             </div>
           </div>
@@ -231,7 +245,7 @@ export default function EditProfile() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059] flex items-center gap-2">
-                    <UserIcon size={14} /> Full Name
+                    Full Name
                   </label>
                   <input
                     type="text"
@@ -242,7 +256,7 @@ export default function EditProfile() {
                 </div>
                 <div className="space-y-3">
                   <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059] flex items-center gap-2">
-                    <Calendar size={14} /> Birthday Date
+                    Birthday Date
                   </label>
                   <input
                     type="date"
@@ -255,7 +269,7 @@ export default function EditProfile() {
 
               <div className="space-y-3">
                 <label className="text-xs font-bold uppercase tracking-widest text-[#c5a059] flex items-center gap-2">
-                  <FileText size={14} /> Biography / Story
+                  Biography / Story
                 </label>
                 <textarea
                   rows={8}
@@ -266,39 +280,9 @@ export default function EditProfile() {
                 />
               </div>
             </motion.div>
-
-            {/* Gallery Section */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass p-10 rounded-[40px] shadow-xl border-white/50"
-            >
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-serif text-[#1d1d1f] flex items-center gap-3">
-                  <ImageIcon size={24} className="text-[#c5a059]" /> Memory Gallery
-                </h2>
-                <button className="px-5 py-2 rounded-full border border-[#c5a05920] text-[#c5a059] text-xs font-bold uppercase tracking-widest hover:bg-[#c5a05905] transition-all">
-                  + Add Media
-                </button>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="aspect-square rounded-[24px] bg-black/5 border-2 border-dashed border-black/5 flex flex-col items-center justify-center text-[#6e6e73]/30">
-                  <span className="text-[10px] font-bold uppercase tracking-tighter">Empty Slot</span>
-                </div>
-              </div>
-            </motion.div>
           </div>
         </div>
       </main>
     </div>
-  );
-}
-
-function UserIcon({ size }: { size: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-      <circle cx="12" cy="7" r="4"></circle>
-    </svg>
   );
 }
